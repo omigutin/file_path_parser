@@ -3,6 +3,9 @@ name = "path_name_parser"
 version = "0.1.2"
 description = "Flexible parser for extracting groups from filenames and paths"
 authors = ["Oleg migutin83@yandex.ru"]
+readme = "README.md"
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
 
 packages = [
     { include = "path_name_parser.py", from = "src" }
@@ -14,3 +17,7 @@ python = "^3.8"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[project.urls]
+Homepage = "https://github.com/migutin83/path_name_parser"
+Issues = "https://github.com/migutin83/path_name_parser/issues"
