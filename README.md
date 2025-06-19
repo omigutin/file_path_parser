@@ -1,20 +1,13 @@
 # Path Name Parser
 
-Universal, extensible Python library for extracting structured information (groups, dates, times, custom patterns) from file names and paths.  
-**No hardcoded logic — configure as you like!**  
-Supports any set of groups, custom regex, Enum, lists; automatically validates dates and times.
+Universal, extensible Python library for extracting structured information (groups, dates, times, custom patterns) from file names and paths.
 
----
-
-## Features
-
-- **Extracts groups** by list, Enum, or dictionary.
-- **Automatically finds dates and times** in common formats, validates them.
-- **Custom patterns:** add as many as you need with regular expressions.
-- **Configurable priority:** filename or path wins if both have values.
-- **Works with both** `str` and `pathlib.Path`.
-- **Returns `None`** for any group if not found or not valid.
-- **Clean, maintainable structure.**
+- **No hardcoded logic:** you choose any number of groups (lists, enums, dicts, strings).
+- **Automatic date and time search** (many formats supported and validated).
+- **Unlimited custom patterns:** add your own regex groups.
+- **Configurable priority:** filename or path takes precedence.
+- **Supports `str` and `pathlib.Path`.**
+- **Returns `None` if not found or not valid.**
 
 ---
 
@@ -24,94 +17,166 @@ Supports any set of groups, custom regex, Enum, lists; automatically validates d
 pip install path_name_parser
 ```
 
+---
+
+
 ## Supported Date and Time Formats
-### Date examples:
-* 20240622 (YYYYMMDD)
-* 2024-06-22, 2024_06_22 (YYYY-MM-DD, YYYY_MM_DD)
-* 22.06.2024, 22-06-2024 (DD.MM.YYYY, DD-MM-YYYY)
-* 220624 (YYMMDD)
-* 2024-6-2, 2024_6_2
+**Date examples:**
+- 20240622           (YYYYMMDD)
+- 2024-06-22         (YYYY-MM-DD)
+- 2024_06_22         (YYYY_MM_DD)
+- 22.06.2024         (DD.MM.YYYY)
+- 22-06-2024         (DD-MM-YYYY)
+- 220624             (YYMMDD)
+- 2024-6-2, 2024_6_2
 
-### Time examples:
-* 154212 (HHMMSS)
-* 1542 (HHMM)
-* 15-42-12, 15_42_12 (HH-MM-SS, HH_MM_SS)
-* 15-42, 15_42 (HH-MM, HH_MM)
+**Time examples:**
+- 154212             (HHMMSS)
+- 1542               (HHMM)
+- 15-42-12           (HH-MM-SS)
+- 15_42_12           (HH_MM_SS)
+- 15-42, 15_42       (HH-MM, HH_MM)
 
-Dates/times are validated. E.g. "20241341" is not a date, "246199" is not a time.
+All dates and times are validated. E.g. "20241341" is not a date; "246199" is not a time.
 
 ---
 
 ## Usage Examples
 
-### Minimal Example
+### 1. Lists and Tuples as Groups
 ```python
 from path_name_parser import PathNameParser
 
-known_projects = ["projectX", "mydata", "reportA"]
-custom_patterns = {
-    "cam": r"cam\d{1,3}",
-    "count": r"count\d{1,3}"
-}
+animals = ["cat", "dog"]
+shifts = ("night", "day")
+departments = {"department": ["prod", "dev", "test"]}
 
 parser = PathNameParser(
-    groups={
-        "project": known_projects,
-        "date": True,
-        "time": True
-    },
-    patterns=custom_patterns
+    animals,
+    shifts,
+    departments,
+    date=True,
+    time=True,
+    patterns={"cam": r"cam\d{1,2}"}
 )
 
-result = parser.parse("mydata_cam12_count17_20240622_154212.jpg")
+result = parser.parse("cat_night_dev_cam08_20240622_1542.jpg")
 print(result)
 # {
-#   "project": "mydata",
+#   "group1": "cat",
+#   "group2": "night",
+#   "department": "dev",
 #   "date": "20240622",
-#   "time": "154212",
-#   "cam": "cam12",
-#   "count": "count17"
+#   "time": "1542",
+#   "cam": "cam08"
 # }
 ```
-
----
-
-## Using with Enum and Paths
+### 2. Enum as Groups
 ```python
 from path_name_parser import PathNameParser
 from enum import Enum
-from pathlib import Path
 
 class Shift(Enum):
     NIGHT = "night"
     DAY = "day"
 
+class Animal(Enum):
+    CAT = "cat"
+    DOG = "dog"
+
 parser = PathNameParser(
-    groups={
-        "shift": Shift,
-        "date": True,
-        "time": True,
-    },
+    Animal,
+    Shift,
+    date=True,
+    time=True,
     patterns={"cam": r"cam\d{1,2}"}
 )
 
-result = parser.parse(Path("/some/folder/day_cam8_2024-06-22_1537.avi"))
+result = parser.parse("dog_day_cam12_2024-06-23_1730.avi")
 print(result)
 # {
+#   "animal": "dog",
 #   "shift": "day",
-#   "date": "2024-06-22",
-#   "time": "1537",
-#   "cam": "cam8"
+#   "date": "2024-06-23",
+#   "time": "1730",
+#   "cam": "cam12"
 # }
 ```
 
----
+### 3. Dictionary as Group
+```python
+from path_name_parser import PathNameParser
 
-## Full Customization
-* Pass any number of groups: enums, lists, dicts.
-* Pass any number of custom patterns via patterns.
-* Control separator (default: _).
-* Set priority="filename" or "path" (default: "filename").
+departments = {"department": ["it", "finance", "marketing"]}
+levels = {"level": ("junior", "middle", "senior")}
+flags = {"flag": "urgent"}
+
+parser = PathNameParser(
+    departments,
+    levels,
+    flags,
+    date=True,
+    patterns={"ticket": r"T\d{3,5}"}
+)
+
+result = parser.parse("finance_senior_urgent_T1004_20240601.txt")
+print(result)
+# {
+#   "department": "finance",
+#   "level": "senior",
+#   "flag": "urgent",
+#   "date": "20240601",
+#   "ticket": "T1004"
+# }
+```
+
+### 4. Mixed Groups: Enum, List, Custom Patterns, Date, and Time
+```python
+from path_name_parser import PathNameParser
+from enum import Enum
+
+class Status(Enum):
+    OPEN = "open"
+    CLOSED = "closed"
+
+parser = PathNameParser(
+    Status,
+    ["alpha", "beta"],
+    date=True,
+    time=True,
+    patterns={"session": r"session\d+"}
+)
+
+result = parser.parse("beta_open_session27_2023-12-31_2359.txt")
+print(result)
+# {
+#   "status": "open",
+#   "group2": "beta",
+#   "date": "2023-12-31",
+#   "time": "2359",
+#   "session": "session27"
+# }
+```
+
+### 5. Only Custom Patterns and Date/Time
+```python
+from path_name_parser import PathNameParser
+
+parser = PathNameParser(
+    date=True,
+    time=True,
+    patterns={"id": r"id\d+", "batch": r"batch\d{2,4}"}
+)
+
+result = parser.parse("id99_batch012_20240701_1430.log")
+print(result)
+# {
+#   "date": "20240701",
+#   "time": "1430",
+#   "id": "id99",
+#   "batch": "batch012"
+# }
+```
 
 ---
 
@@ -119,33 +184,42 @@ print(result)
 ```python
 class PathNameParser:
     def __init__(
-        self,
-        groups: Dict[str, Any],  # e.g., {"animal": ["cat", "dog"], "date": True, "time": True}
+        *groups: Any,        # Any number of lists, enums, dicts, or strings (group name auto-detected)
+        date: bool = False,  # Extract date? (default: False)
+        time: bool = False,  # Extract time? (default: False)
         separator: str = "_",
-        priority: str = "filename",
-        patterns: dict = None,   # e.g., {"cam": r"cam\d{1,2}"}
+        priority: str = "filename", # or "path"
+        patterns: dict = None,      # e.g. {"cam": r"cam\d+"}
     )
 
     def parse(self, full_path: Union[str, Path]) -> dict:
         """
-        Returns a dict {group: found_value or None}.
+        Returns a dict {group: value or None, ...}.
         """
 ```
-**Date and time are always validated:** if an invalid date or time is found, result is None for that group.
+* **Group name** is auto-generated:
+  * Enum: lowercase enum class name.
+  * Dict: key as group name.
+  * List/tuple/set: groupN (N = order of argument).
+  * String: value as group name.
+* If group not found or invalid: returns None for that group.
+* **Date and time** always validated (returns None if not real date/time).
 
 ---
 
 ## How It Works
-1.Splits filename and path into “blocks” (by _, -, ., /, etc).
+1. Splits filename and path into “blocks” (by `_`, `-`, `.`, `/`, etc).
 
-2.For each group, tries to find exact match (for enums, lists, dicts).
+2. For each group, tries to find an exact match (for enums, lists, dicts).
 
-3.For date and time groups:
-  * Matches all known formats via regex.
-  * Validates with datetime.strptime.
+3. For `date` and `time`:  
+   - Matches all supported formats via regex.
+   - Validates with `datetime.strptime`.
 
-4.For custom patterns:
-  * Uses regex supplied in patterns.
+4. For custom patterns:  
+   - Uses provided regex patterns.
+
+If both path and filename have a group, the value from `priority` wins.
 
 ---
 

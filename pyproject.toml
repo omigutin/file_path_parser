@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "path_name_parser"
-version = "0.1.1"
+version = "0.1.2"
 description = "Flexible parser for extracting groups from filenames and paths"
 authors = ["Oleg migutin83@yandex.ru"]
 
