@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from pathlib import Path
 
-from .pattern_matcher import PatternMatcher
+from pattern_matcher import PatternMatcher
 
 
 class PathNameParser:
