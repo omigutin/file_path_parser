@@ -1,79 +1,167 @@
-# PathNameParser
+# Path Name Parser
 
-**PathNameParser** is a flexible and universal Python library for extracting structured keywords (groups) from both filenames and directory paths.
+Universal, extensible Python library for extracting structured information (groups, dates, times, custom patterns) from file names and paths.  
+**No hardcoded logic — configure as you like!**  
+Supports any set of groups, custom regex, Enum, lists; automatically validates dates and times.
 
-- Works for any files: images, videos, documents, datasets, and more.
-- Supports any number of groups (category, type, region, shift, etc.), provided as enums, lists, or dictionaries.
-- Customizable separator for splitting names into blocks (default: `_`).
-- Smart priority: extract values from filename, path, or combine both.
-- No external dependencies.
+---
 
 ## Features
 
-- ⚡️ Parse any number of groups from any file or directory name.
-- 🛠️ Accepts enums, lists, or dicts as group sources.
-- 🔧 Customizable block separator (default: `_`).
-- 🎯 Priority option: `"filename"` or `"path"`.
-- ✅ Checks for duplicate values inside groups.
-- 🔗 Supports both `str` and `pathlib.Path`.
+- **Extracts groups** by list, Enum, or dictionary.
+- **Automatically finds dates and times** in common formats, validates them.
+- **Custom patterns:** add as many as you need with regular expressions.
+- **Configurable priority:** filename or path wins if both have values.
+- **Works with both** `str` and `pathlib.Path`.
+- **Returns `None`** for any group if not found or not valid.
+- **Clean, maintainable structure.**
+
+---
 
 ## Installation
 
-**With Poetry:**
 ```bash
-poetry add path_name_parser
+pip install path_name_parser
 ```
 
-## Usage
+## Supported Date and Time Formats
+### Date examples:
+* 20240622 (YYYYMMDD)
+* 2024-06-22, 2024_06_22 (YYYY-MM-DD, YYYY_MM_DD)
+* 22.06.2024, 22-06-2024 (DD.MM.YYYY, DD-MM-YYYY)
+* 220624 (YYMMDD)
+* 2024-6-2, 2024_6_2
 
+### Time examples:
+* 154212 (HHMMSS)
+* 1542 (HHMM)
+* 15-42-12, 15_42_12 (HH-MM-SS, HH_MM_SS)
+* 15-42, 15_42 (HH-MM, HH_MM)
+
+Dates/times are validated. E.g. "20241341" is not a date, "246199" is not a time.
+
+---
+
+## Usage Examples
+
+### Minimal Example
 ```python
-from src.path_name_parser import PathNameParser
-from enum import Enum
+from path_name_parser import PathNameParser
 
-class Animal(Enum):
-    CAT = "cat"
-    DOG = "dog"
+known_projects = ["projectX", "mydata", "reportA"]
+custom_patterns = {
+    "cam": r"cam\d{1,3}",
+    "count": r"count\d{1,3}"
+}
+
+parser = PathNameParser(
+    groups={
+        "project": known_projects,
+        "date": True,
+        "time": True
+    },
+    patterns=custom_patterns
+)
+
+result = parser.parse("mydata_cam12_count17_20240622_154212.jpg")
+print(result)
+# {
+#   "project": "mydata",
+#   "date": "20240622",
+#   "time": "154212",
+#   "cam": "cam12",
+#   "count": "count17"
+# }
+```
+
+---
+
+## Using with Enum and Paths
+```python
+from path_name_parser import PathNameParser
+from enum import Enum
+from pathlib import Path
 
 class Shift(Enum):
     NIGHT = "night"
     DAY = "day"
 
-# Example 1: Using a dict for named groups
-parser = PathNameParser(groups={"animal": Animal, "shift": Shift}, separator="_")
-result = parser.parse("dog_night_20240619.jpg")
+parser = PathNameParser(
+    groups={
+        "shift": Shift,
+        "date": True,
+        "time": True,
+    },
+    patterns={"cam": r"cam\d{1,2}"}
+)
+
+result = parser.parse(Path("/some/folder/day_cam8_2024-06-22_1537.avi"))
 print(result)
-# {'animal': 'dog', 'shift': 'night'}
-
-# Example 2: Passing several enums/lists directly (auto-named: group_1, group_2, ...)
-parser2 = PathNameParser(Animal, Shift, separator="_")
-result2 = parser2.parse("cat_day_20240619.jpg")
-print(result2)
-# {'group_1': 'cat', 'group_2': 'day'}
-
-# Example 3: Parsing path with priority
-parser3 = PathNameParser(groups={"animal": Animal, "shift": Shift}, separator="_", priority="path")
-result3 = parser3.parse("/images/dog/night/20240619.jpg")
-print(result3)
-# {'animal': 'dog', 'shift': 'night'}
+# {
+#   "shift": "day",
+#   "date": "2024-06-22",
+#   "time": "1537",
+#   "cam": "cam8"
+# }
 ```
 
-## API
-PathNameParser(*groups_args, groups=None, separator='_', priority='filename')
-* groups_args: any number of enums or lists (will be named group_1, group_2, ...).
-* groups: dict of group_name → enum/list.
-* separator: character(s) for splitting names into blocks.
-* priority: "filename" (default) or "path".
+---
 
-`.parse(path: str | Path) → dict`
+## Full Customization
+* Pass any number of groups: enums, lists, dicts.
+* Pass any number of custom patterns via patterns.
+* Control separator (default: _).
+* Set priority="filename" or "path" (default: "filename").
 
-Returns a dictionary:
-`{group_name: found_value or None, ...}`
+---
 
-Testing
-To run tests:
-```bash
-pytest tests
+## API Reference
+```python
+class PathNameParser:
+    def __init__(
+        self,
+        groups: Dict[str, Any],  # e.g., {"animal": ["cat", "dog"], "date": True, "time": True}
+        separator: str = "_",
+        priority: str = "filename",
+        patterns: dict = None,   # e.g., {"cam": r"cam\d{1,2}"}
+    )
+
+    def parse(self, full_path: Union[str, Path]) -> dict:
+        """
+        Returns a dict {group: found_value or None}.
+        """
 ```
+**Date and time are always validated:** if an invalid date or time is found, result is None for that group.
+
+---
+
+## How It Works
+1.Splits filename and path into “blocks” (by _, -, ., /, etc).
+
+2.For each group, tries to find exact match (for enums, lists, dicts).
+
+3.For date and time groups:
+  * Matches all known formats via regex.
+  * Validates with datetime.strptime.
+
+4.For custom patterns:
+  * Uses regex supplied in patterns.
+
+---
+
+## Notes
+* Group name in the result will be None if not found or not valid.
+* If both path and filename have the group, value from priority wins.
+* You can use any number of groups or patterns — no hard limit.
+
+---
+
+## Contributing
+Pull requests, bug reports and feature requests are welcome!
+
+---
 
 ## License
 MIT
+
+---

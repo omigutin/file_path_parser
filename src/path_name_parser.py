@@ -1,38 +1,51 @@
 __all__ = ['PathNameParser']
 
-from typing import Dict, Any, Union, Optional
+import re
 from pathlib import Path
+from typing import Dict, Any, Union
+
+from pattern_matcher import PatternMatcher
 
 
 class PathNameParser:
+    """
+        Универсальный парсер для извлечения групп (factory, module, date, time, и любые custom patterns)
+        из имени файла или пути.
+        - Передайте groups: словарь {"ключ": Enum/список/True} для поиска известных значений (enums, списки)
+          и спец-флагов ("date", "time").
+        - Передайте patterns: словарь {"ключ": regex-строка} для поиска по регулярным выражениям.
+        - separator: строка-разделитель (по умолчанию "_").
+        - priority: "filename" (по умолчанию) или "path" — что считать приоритетным при объединении.
+        Все ключи из patterns всегда ищутся и попадают в результат, даже если их нет в groups.
+    """
+
     def __init__(
-        self,
-        *groups_args,
-        groups: Optional[Dict[str, Any]] = None,
-        separator: str = "_",
-        priority: str = "filename"
+            self,
+            groups: Dict[str, Any],
+            separator: str = "_",
+            priority: str = "filename",
+            patterns: dict = None,
     ):
-        if groups is not None:
-            self._groups = {k: self._to_str_list(v) for k, v in groups.items()}
-        elif groups_args:
-            self._groups = {}
-            for idx, group in enumerate(groups_args, start=1):
-                self._groups[f"group_{idx}"] = self._to_str_list(group)
-        else:
-            raise ValueError("Provide at least one enum/list or dict as groups")
+        """
+            Args:
+                groups: словарь {группа: список_значений или True/False для date/time}
+                separator: символ-разделитель (по умолчанию "_")
+                priority: что важнее: 'filename' или 'path'
+                patterns: словарь дополнительных паттернов (regex), например {"cam": r"cam\d{1,3}"}
+        """
+        self._groups = groups
         self._separator = separator
         self._priority = priority
-        self._validate_no_duplicates()
+        self._enum_groups = {k: v for k, v in groups.items() if not isinstance(v, bool)}
+        self._special_groups = {k: v for k, v in groups.items() if isinstance(v, bool)}
+        self.matcher = PatternMatcher(patterns)
 
     def parse(self, full_path: Union[str, Path]) -> dict:
+        """ Анализирует путь или имя файла, возвращает словарь найденных групп. """
         path = Path(full_path)
         filename = path.name
         dirpath = str(path.parent)
-
-        self._log(f"Parsing filename: {filename}")
         data_from_name = self._parse_blocks(filename)
-
-        self._log(f"Parsing directory path: {dirpath}")
         data_from_path = self._parse_blocks(dirpath)
 
         if self._priority == "filename":
@@ -42,15 +55,17 @@ class PathNameParser:
         else:
             raise ValueError(f"Unknown priority: {self._priority}")
 
-        self._log(f"Result: {merged}")
         return merged
 
     def _parse_blocks(self, s: str) -> dict:
-        blocks = s.split(self._separator)
+        blocks = [b for b in re.split(r'[\\/{}\-_. ]+', s) if b]
         result = {}
-        for group_name, group_values in self._groups.items():
+
+        # Обычные группы (enum, list)
+        for group_name, group_values in self._enum_groups.items():
             found = None
-            for value in group_values:
+            values = self._to_str_list(group_values)
+            for value in values:
                 for block in blocks:
                     if value and value == block:
                         found = value
@@ -58,13 +73,46 @@ class PathNameParser:
                 if found:
                     break
             result[group_name] = found
-        return result
 
-    def _validate_no_duplicates(self):
-        for k, v in self._groups.items():
-            s = list(v)
-            if len(s) != len(set(s)):
-                raise ValueError(f"Duplicates found in group {k}: {s}")
+        # Дата
+        date_val = None
+        if "date" in self._special_groups and self._special_groups["date"]:
+            for b in blocks:
+                for pat in self.matcher.DATE_PATTERNS:
+                    m = re.fullmatch(pat, b)
+                    if m and self.matcher.is_valid_date(m.group(0)):
+                        date_val = m.group(0)
+                        break
+                if date_val:
+                    break
+            result["date"] = date_val
+
+        # Время (исключая блок, уже найденный как дата)
+        time_val = None
+        if "time" in self._special_groups and self._special_groups["time"]:
+            for b in blocks:
+                if b == date_val:
+                    continue
+                for pat in self.matcher.TIME_PATTERNS:
+                    m = re.fullmatch(pat, b)
+                    if m and self.matcher.is_valid_time(m.group(0)):
+                        time_val = m.group(0)
+                        break
+                if time_val:
+                    break
+            result["time"] = time_val
+
+        # Пользовательские шаблоны (patterns)
+        if self.matcher.user_patterns:
+            for group_name, pat in self.matcher.user_patterns.items():
+                if group_name not in result or not result[group_name]:
+                    for block in blocks:
+                        m = re.fullmatch(pat, block)
+                        if m:
+                            result[group_name] = m.group(0)
+                            break
+
+        return result
 
     @staticmethod
     def _to_str_list(values):
@@ -73,7 +121,3 @@ class PathNameParser:
         if isinstance(values, dict):
             return list(map(str, values.values()))
         return [str(v) for v in values]
-
-    @staticmethod
-    def _log(msg):
-        print(f"[PathNameParser] {msg}")
