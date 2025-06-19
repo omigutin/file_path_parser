@@ -1,0 +1,13 @@
+[tool.poetry]
+name = "path_name_parser"
+version = "0.1.0"
+description = "Flexible parser for extracting groups from filenames and paths"
+authors = ["Oleg migutin83@yandex.ru"]
+packages = [{ include = "path_name_parser" }]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
