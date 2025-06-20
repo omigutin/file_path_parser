@@ -107,9 +107,15 @@ class PathNameParser:
         data_from_path = self._parse_blocks(dirpath)
 
         if self._priority == "filename":
-            merged = {**data_from_path, **data_from_name}
+            merged = dict(data_from_name)
+            for k, v in data_from_path.items():
+                if not merged.get(k):
+                    merged[k] = v
         elif self._priority == "path":
-            merged = {**data_from_name, **data_from_path}
+            merged = dict(data_from_path)
+            for k, v in data_from_name.items():
+                if not merged.get(k):
+                    merged[k] = v
         else:
             raise ValueError(f"Unknown priority: {self._priority}")
 
@@ -125,7 +131,7 @@ class PathNameParser:
                 Dict[str, Optional[str]]: Словарь, где ключи — имена групп, "date", "time" и имена кастомных паттернов,
                 а значения — найденные совпадения (или None, если не найдено).
         """
-        blocks = [b for b in re.split(r'[\\/{}\-_. ]+', s) if b]
+        blocks = [b.lower() for b in re.split(r'[\\/{}\-_. ]+', s) if b]
         result: Dict[str, Optional[str]] = {}
 
         result.update(self._find_groups(blocks))
