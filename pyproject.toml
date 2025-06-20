@@ -5,7 +5,6 @@ description = "Universal, extensible Python library for extracting structured in
 authors = ["Oleg migutin83@yandex.ru"]
 readme = "README.md"
 license = "MIT"
-license-files = ["LICEN[CS]E*"]
 
 packages = [
     { include = "path_name_parser", from = "src" }
@@ -14,10 +13,10 @@ packages = [
 [tool.poetry.dependencies]
 python = "^3.8"
 
+[tool.poetry.urls]
+Homepage = "https://github.com/migutin83/path_name_parser"
+Issues = "https://github.com/migutin83/path_name_parser/issues"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
-[project.urls]
-Homepage = "https://github.com/migutin83/path_name_parser"
-Issues = "https://github.com/migutin83/path_name_parser/issues"
