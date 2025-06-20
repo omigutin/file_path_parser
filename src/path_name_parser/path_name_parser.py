@@ -1,11 +1,11 @@
 __all__ = ['PathNameParser']
 
 import re
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Iterable
 
 from pathlib import Path
 
-from pattern_matcher import PatternMatcher
+from .pattern_matcher import PatternMatcher
 
 
 class PathNameParser:
@@ -24,7 +24,6 @@ class PathNameParser:
             out = parser.parse("cat_night_cam15_20240619_1236.jpg")
             # out == {"group1": "cat", "group2": "night", "date": "20240619", "time": "1236", "cam": "cam15"}
     """
-
     _groups: Dict[str, List[str]]
     _date: bool
     _time: bool
@@ -118,18 +117,36 @@ class PathNameParser:
 
     def _parse_blocks(self, s: str) -> Dict[str, Optional[str]]:
         """
-            Разбивает строку по разделителям и извлекает группы, дату, время и кастомные паттерны.
-
+            Разбивает входную строку на блоки и последовательно извлекает из них
+            группы, дату, время и кастомные паттерны.
             Args:
-                s: строка (файл или путь)
-
+                s (str): Имя файла или путь, содержащий информативные блоки.
             Returns:
-                dict: {group_name: value, ...}
+                Dict[str, Optional[str]]: Словарь, где ключи — имена групп, "date", "time" и имена кастомных паттернов,
+                а значения — найденные совпадения (или None, если не найдено).
         """
         blocks = [b for b in re.split(r'[\\/{}\-_. ]+', s) if b]
         result: Dict[str, Optional[str]] = {}
 
-        # Группы
+        result.update(self._find_groups(blocks))
+        date_val = self._find_date(blocks) if self._date else None
+        if date_val:
+            result["date"] = date_val
+        time_val = self._find_time(blocks, exclude=date_val) if self._time else None
+        if time_val:
+            result["time"] = time_val
+        result.update(self._find_patterns(blocks, skip_keys=result.keys()))
+        return result
+
+    def _find_groups(self, blocks: List[str]) -> Dict[str, Optional[str]]:
+        """
+            Ищет совпадения между переданными группами значений и блоками строки.
+            Args:
+                blocks (List[str]): Список строковых блоков, полученных из имени файла или пути.
+            Returns:
+                Dict[str, Optional[str]]: Словарь, где ключи — имена групп, значения — найденный элемент или None.
+        """
+        res = {}
         for group_name, group_values in self._groups.items():
             found = None
             for value in group_values:
@@ -139,44 +156,60 @@ class PathNameParser:
                         break
                 if found:
                     break
-            result[group_name] = found
+            res[group_name] = found
+        return res
 
-        # Дата
-        date_val = None
-        if self._date:
-            for b in blocks:
-                for pat in self.matcher.DATE_PATTERNS:
-                    m = re.fullmatch(pat, b)
-                    if m and self.matcher.is_valid_date(m.group(0)):
-                        date_val = m.group(0)
-                        break
-                if date_val:
-                    break
-            result["date"] = date_val
+    def _find_date(self, blocks: List[str]) -> Optional[str]:
+        """
+            Ищет блок, соответствующий одному из поддерживаемых форматов даты, и валидирует его.
+            Args:
+                blocks (List[str]): Список строковых блоков для анализа.
+            Returns:
+                Optional[str]: Найденная валидная дата в виде строки, либо None если не найдено.
+        """
+        for b in blocks:
+            for pat in self.matcher.DATE_PATTERNS:
+                m = re.fullmatch(pat, b)
+                if m and self.matcher.is_valid_date(m.group(0)):
+                    return m.group(0)
+        return None
 
-        # Время
-        time_val = None
-        if self._time:
-            for b in blocks:
-                if b == date_val:
-                    continue
-                for pat in self.matcher.TIME_PATTERNS:
-                    m = re.fullmatch(pat, b)
-                    if m and self.matcher.is_valid_time(m.group(0)):
-                        time_val = m.group(0)
-                        break
-                if time_val:
-                    break
-            result["time"] = time_val
+    def _find_time(self, blocks: List[str], exclude: Optional[str] = None) -> Optional[str]:
+        """
+            Ищет блок, соответствующий одному из поддерживаемых форматов времени, с опциональным исключением блока даты.
+            Args:
+                blocks (List[str]): Список строковых блоков для анализа.
+                exclude (Optional[str]): Значение, которое не должно рассматриваться как время (например, найденная дата).
+            Returns:
+                Optional[str]: Найденное валидное время в виде строки, либо None если не найдено.
+        """
+        for b in blocks:
+            if b == exclude:
+                continue
+            for pat in self.matcher.TIME_PATTERNS:
+                m = re.fullmatch(pat, b)
+                if m and self.matcher.is_valid_time(m.group(0)):
+                    return m.group(0)
+        return None
 
-        # Кастомные patterns
+    def _find_patterns(self, blocks: List[str], skip_keys: Optional[Iterable[str]] = None) -> Dict[str, Optional[str]]:
+        """
+            Ищет пользовательские кастомные паттерны по всем блокам.
+            Args:
+                blocks (List[str]): Список строковых блоков.
+                skip_keys (Optional[Iterable[str]]): Множество ключей, которые не нужно переопределять, если совпадение уже найдено.
+            Returns:
+                Dict[str, Optional[str]]: Словарь с именами паттернов и найденными значениями (или None).
+        """
+        skip_keys = set(skip_keys) if skip_keys else set()
+        res = {}
         if self.matcher.user_patterns:
             for group_name, pat in self.matcher.user_patterns.items():
-                if group_name not in result or not result[group_name]:
-                    for block in blocks:
-                        m = re.fullmatch(pat, block)
-                        if m:
-                            result[group_name] = m.group(0)
-                            break
-
-        return result
+                if group_name in skip_keys:
+                    continue
+                for block in blocks:
+                    m = re.fullmatch(pat, block)
+                    if m:
+                        res[group_name] = m.group(0)
+                        break
+        return res

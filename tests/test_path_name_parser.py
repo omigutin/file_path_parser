@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-# Делаем src импортируемым
+
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from path_name_parser import PathNameParser
