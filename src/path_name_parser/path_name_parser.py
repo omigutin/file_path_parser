@@ -57,46 +57,43 @@ class PathNameParser:
         self.matcher = PatternMatcher(patterns)
 
     @staticmethod
-    def _parse_groups(*groups: Any) -> Dict[str, List[str]]:
+    def _parse_groups(*groups: Any) -> Dict[str, Dict[str, str]]:
         """
-            Преобразует все пришедшие группы в словарь {group_name: [values]}.
-
+            Преобразует все пришедшие группы в словарь {group_name: {value_lower: value_original}}.
             Args:
                 *groups: любые списки, enum, dict, str
 
             Returns:
-                dict: {group_name: [values]}
+                dict: {group_name: {value_lower: value_original}}
         """
-        result: Dict[str, List[str]] = {}
+        result: Dict[str, Dict[str, str]] = {}
         group_counter = 1
         for g in groups:
             if hasattr(g, "__members__"):  # Enum
                 name = g.__name__.lower()
-                result[name] = [str(v.value) for v in g]
+                result[name] = {str(v.value).lower(): str(v.value) for v in g}
             elif isinstance(g, dict):
                 for k, v in g.items():
                     name = str(k).lower()
                     values = v if isinstance(v, (list, tuple, set)) else [v]
-                    result[name] = [str(val) for val in values]
+                    result[name] = {str(val).lower(): str(val) for val in values}
             elif isinstance(g, (list, tuple, set)):
                 name = f"group{group_counter}"
-                result[name] = [str(val) for val in g]
+                result[name] = {str(val).lower(): str(val) for val in g}
                 group_counter += 1
             elif isinstance(g, str):
                 name = g.lower()
-                result[name] = [g]
+                result[name] = {g.lower(): g}
             else:
                 name = g.__class__.__name__.lower()
-                result[name] = [str(g)]
+                result[name] = {str(g).lower(): str(g)}
         return result
 
     def parse(self, full_path: Union[str, Path]) -> Dict[str, Optional[str]]:
         """
             Анализирует путь или имя файла, возвращает словарь найденных групп.
-
             Args:
                 full_path: строка или Path до файла/директории
-
             Returns:
                 dict: {group_name: str or None, "date": str or None, "time": str or None, ...}
         """
@@ -134,19 +131,28 @@ class PathNameParser:
         blocks = [b.lower() for b in re.split(r'[\\/{}\-_. ]+', s) if b]
         result: Dict[str, Optional[str]] = {}
 
+        # Группы
         result.update(self._find_groups(blocks))
+
+        # Дата
         date_val = self._find_date(blocks) if self._date else None
         if date_val:
             result["date"] = date_val
+
+        # Время
         time_val = self._find_time(blocks, exclude=date_val) if self._time else None
         if time_val:
             result["time"] = time_val
+
+        # Кастомные patterns
         result.update(self._find_patterns(blocks, skip_keys=result.keys()))
+
         return result
 
     def _find_groups(self, blocks: List[str]) -> Dict[str, Optional[str]]:
         """
             Ищет совпадения между переданными группами значений и блоками строки.
+            Возвращает оригинальное значение (а не lower-case).
             Args:
                 blocks (List[str]): Список строковых блоков, полученных из имени файла или пути.
             Returns:
@@ -155,12 +161,10 @@ class PathNameParser:
         res = {}
         for group_name, group_values in self._groups.items():
             found = None
-            for value in group_values:
-                for block in blocks:
-                    if value and value == block:
-                        found = value
-                        break
-                if found:
+            for block in blocks:
+                key = block.lower()
+                if key in group_values:
+                    found = group_values[key]
                     break
             res[group_name] = found
         return res
