@@ -1,4 +1,4 @@
-# Path Name Parser
+# file_path_parser
 
 Universal, extensible Python library for extracting structured information (groups, dates, times, custom patterns) from file names and paths.
 
@@ -14,7 +14,7 @@ Universal, extensible Python library for extracting structured information (grou
 ## Installation
 
 ```bash
-pip install path_name_parser
+pip install file_path_parser
 ```
 
 ---
@@ -45,13 +45,13 @@ All dates and times are validated. E.g. "20241341" is not a date; "246199" is no
 
 ### 1. Lists and Tuples as Groups
 ```python
-from path_name_parser import PathNameParser
+from file_path_parser import FilePathParser
 
 animals = ["cat", "dog"]
 shifts = ("night", "day")
 departments = {"department": ["prod", "dev", "test"]}
 
-parser = PathNameParser(
+parser = FilePathParser(
     animals,
     shifts,
     departments,
@@ -73,7 +73,7 @@ print(result)
 ```
 ### 2. Enum as Groups
 ```python
-from path_name_parser import PathNameParser
+from file_path_parser import FilePathParser
 from enum import Enum
 
 class Shift(Enum):
@@ -84,7 +84,7 @@ class Animal(Enum):
     CAT = "cat"
     DOG = "dog"
 
-parser = PathNameParser(
+parser = FilePathParser(
     Animal,
     Shift,
     date=True,
@@ -105,13 +105,13 @@ print(result)
 
 ### 3. Dictionary as Group
 ```python
-from path_name_parser import PathNameParser
+from file_path_parser import FilePathParser
 
 departments = {"department": ["it", "finance", "marketing"]}
 levels = {"level": ("junior", "middle", "senior")}
 flags = {"flag": "urgent"}
 
-parser = PathNameParser(
+parser = FilePathParser(
     departments,
     levels,
     flags,
@@ -132,14 +132,14 @@ print(result)
 
 ### 4. Mixed Groups: Enum, List, Custom Patterns, Date, and Time
 ```python
-from path_name_parser import PathNameParser
+from file_path_parser import FilePathParser
 from enum import Enum
 
 class Status(Enum):
     OPEN = "open"
     CLOSED = "closed"
 
-parser = PathNameParser(
+parser = FilePathParser(
     Status,
     ["alpha", "beta"],
     date=True,
@@ -160,9 +160,9 @@ print(result)
 
 ### 5. Only Custom Patterns and Date/Time
 ```python
-from path_name_parser import PathNameParser
+from file_path_parser import FilePathParser
 
-parser = PathNameParser(
+parser = FilePathParser(
     date=True,
     time=True,
     patterns={"id": r"id\d+", "batch": r"batch\d{2,4}"}
@@ -178,11 +178,23 @@ print(result)
 # }
 ```
 
+### 6. If both the path and filename contain a group or date, the value from the priority parameter wins.
+```python
+from file_path_parser import FilePathParser
+
+parser = FilePathParser(["prod", "test"], date=True, priority="filename")
+# 'prod' есть в пути, 'test' — в имени файла
+result = parser.parse("/data/prod/archive/test_20240620.csv")
+print(result)
+# Если priority="filename", group1 == "test"
+# Если priority="path", group1 == "prod"
+```
+
 ---
 
 ## API Reference
 ```python
-class PathNameParser:
+class FilePathParser:
     def __init__(
         *groups: Any,        # Any number of lists, enums, dicts, or strings (group name auto-detected)
         date: bool = False,  # Extract date? (default: False)
@@ -232,6 +244,30 @@ If both path and filename have a group, the value from `priority` wins.
 
 ## Contributing
 Pull requests, bug reports and feature requests are welcome!
+
+---
+
+## FAQ / Known Issues
+
+### Q: What happens if both the path and filename contain the same group, but with different values?
+**A:** The result depends on the `priority` parameter:
+- If `priority="filename"` (default), the group value from the filename wins.
+- If `priority="path"`, the value from the directory path wins.
+
+### Q: Can I use non-Latin or Unicode characters in group values?
+**A:** Yes. Groups and blocks are matched in a case-insensitive way and support Unicode.
+
+### Q: What separators does the parser recognize between blocks?
+**A:** By default, the parser splits by any of these: `_`, `-`, `.`, `/`, `\`, `{}`, or space.  
+If your files use custom separators, let us know!
+
+### Q: What if a value looks like a date/time, but is not real?
+**A:** The parser validates all dates/times. "20241341" (wrong month/day) will not be recognized as a date, etc.
+
+### Known Issues
+- If your separator is unusual (not in the list above), you may need to pre-process filenames.
+- Extremely exotic date/time formats (not listed in "Supported formats") are not matched.
+- Path parsing supports both `str` and `pathlib.Path`, but network/multiplatform paths (e.g., UNC, SMB) are not specifically tested.
 
 ---
 

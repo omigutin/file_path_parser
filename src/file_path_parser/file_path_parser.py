@@ -1,4 +1,4 @@
-__all__ = ['PathNameParser']
+__all__ = ['FilePathParser']
 
 import re
 from typing import Any, Dict, List, Optional, Union, Iterable
@@ -8,13 +8,13 @@ from pathlib import Path
 from .pattern_matcher import PatternMatcher
 
 
-class PathNameParser:
+class FilePathParser:
     """
         Универсальный парсер для извлечения групп, дат, времени и кастомных шаблонов
         из имени файла или пути.
 
         Пример:
-            parser = PathNameParser(
+            parser = FilePathParser(
                 ["cat", "dog"],
                 ["night", "day"],
                 date=True,
@@ -24,7 +24,7 @@ class PathNameParser:
             out = parser.parse("cat_night_cam15_20240619_1236.jpg")
             # out == {"group1": "cat", "group2": "night", "date": "20240619", "time": "1236", "cam": "cam15"}
     """
-    _groups: Dict[str, List[str]]
+    _groups: Dict[str, Dict[str, str]]
     _date: bool
     _time: bool
     _separator: str
