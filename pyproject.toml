@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "file_path_parser"
-version = "0.1.0"
+version = "0.1.1"
 description = "Universal, extensible Python library for extracting structured information (groups, dates, times, custom patterns) from file names and paths."
 authors = ["Oleg migutin83@yandex.ru"]
 readme = "README.md"
