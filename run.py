@@ -3,7 +3,7 @@
 from src.file_path_parser import FilePathParser
 
 
-if __name__ == "__main__":
+def main():
     print("=== DEMO: FilePathParser ===")
 
     parser = FilePathParser(
@@ -18,3 +18,7 @@ if __name__ == "__main__":
     result = parser.parse(test_path)
     print(f"Parsing: {test_path}")
     print(result)
+
+
+if __name__ == "__main__":
+    main()

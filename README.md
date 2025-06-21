@@ -242,6 +242,50 @@ If both path and filename have a group, the value from `priority` wins.
 
 ---
 
+# Command-Line Interface (CLI) for FilePathParser
+
+The library supports a convenient command-line interface (CLI) for extracting structured information from file names and paths.
+
+---
+
+## 🚀 Quick Start
+
+After installing dependencies with Poetry, you can use the `file-path-parser` utility to parse file names directly from your terminal.
+
+### Example usage
+
+```bash
+poetry run file-path-parser "cat_night_cam15_20240619_1236.jpg" --groups cat dog --classes night day --date --time --pattern cam "cam\d{1,3}"
+```
+
+### Show help
+
+```bash
+poetry run file-path-parser --help
+```
+
+---
+
+## CLI Options
+
+* `filepath` — Path or file name to parse
+* `--groups` — List of allowed groups (e.g. `cat dog`)
+* `--classes` — List of allowed classes (e.g. `night day`)
+* `--date` — Enable date parsing
+* `--time` — Enable time parsing
+* `--pattern NAME REGEX` — Add custom pattern (can be used multiple times)
+
+---
+
+### Example
+
+```bash
+poetry run file-path-parser "dog_day_cam2_20240701_0800.jpg" --groups cat dog --classes night day --date --time --pattern cam "cam\d{1,3}"
+```
+The parsing result will be displayed in the terminal.
+
+---
+
 ## Contributing
 Pull requests, bug reports and feature requests are welcome!
 

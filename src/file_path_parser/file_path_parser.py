@@ -220,6 +220,7 @@ class FilePathParser:
                 for block in blocks:
                     m = re.fullmatch(pat, block)
                     if m:
-                        res[group_name] = m.group(0)
+                        # Если паттерн содержит группу — вернуть только её содержимое
+                        res[group_name] = m.group(1) if m.lastindex else m.group(0)
                         break
         return res
