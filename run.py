@@ -1,11 +1,5 @@
 # run.py — ручной запуск и примеры FilePathParser
 
-import sys
-from pathlib import Path
-
-# Добавляем src в PYTHONPATH для локального запуска
-# sys.path.insert(0, str(Path(__file__).parent / "src"))
-
 from src.file_path_parser import FilePathParser
 
 
