@@ -56,6 +56,35 @@ class FilePathParser:
         self._priority = priority
         self.matcher = PatternMatcher(patterns)
 
+    def parse(self, full_path: Union[str, Path]) -> Dict[str, Optional[str]]:
+        """
+            Анализирует путь или имя файла, возвращает словарь найденных групп.
+            Args:
+                full_path: строка или Path до файла/директории
+            Returns:
+                dict: {group_name: str or None, "date": str or None, "time": str or None, ...}
+        """
+        path = Path(full_path)
+        filename = path.name
+        dirpath = str(path.parent)
+        data_from_name = self._parse_blocks(filename)
+        data_from_path = self._parse_blocks(dirpath)
+
+        if self._priority == "filename":
+            merged = dict(data_from_name)
+            for k, v in data_from_path.items():
+                if not merged.get(k):
+                    merged[k] = v
+        elif self._priority == "path":
+            merged = dict(data_from_path)
+            for k, v in data_from_name.items():
+                if not merged.get(k):
+                    merged[k] = v
+        else:
+            raise ValueError(f"Unknown priority: {self._priority}")
+
+        return merged
+
     @staticmethod
     def _parse_groups(*groups: Any) -> Dict[str, Dict[str, str]]:
         """
@@ -88,35 +117,6 @@ class FilePathParser:
                 name = g.__class__.__name__.lower()
                 result[name] = {str(g).lower(): str(g)}
         return result
-
-    def parse(self, full_path: Union[str, Path]) -> Dict[str, Optional[str]]:
-        """
-            Анализирует путь или имя файла, возвращает словарь найденных групп.
-            Args:
-                full_path: строка или Path до файла/директории
-            Returns:
-                dict: {group_name: str or None, "date": str or None, "time": str or None, ...}
-        """
-        path = Path(full_path)
-        filename = path.name
-        dirpath = str(path.parent)
-        data_from_name = self._parse_blocks(filename)
-        data_from_path = self._parse_blocks(dirpath)
-
-        if self._priority == "filename":
-            merged = dict(data_from_name)
-            for k, v in data_from_path.items():
-                if not merged.get(k):
-                    merged[k] = v
-        elif self._priority == "path":
-            merged = dict(data_from_path)
-            for k, v in data_from_name.items():
-                if not merged.get(k):
-                    merged[k] = v
-        else:
-            raise ValueError(f"Unknown priority: {self._priority}")
-
-        return merged
 
     def _parse_blocks(self, s: str) -> Dict[str, Optional[str]]:
         """
