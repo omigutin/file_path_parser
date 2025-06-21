@@ -1,13 +1,41 @@
-# file_path_parser
+# ![Python](https://img.icons8.com/color/32/python.png) FilePathParser
 
 Universal, extensible Python library for extracting structured information (groups, dates, times, custom patterns) from file names and paths.
 
-- **No hardcoded logic:** you choose any number of groups (lists, enums, dicts, strings).
-- **Automatic date and time search** (many formats supported and validated).
-- **Unlimited custom patterns:** add your own regex groups.
-- **Configurable priority:** filename or path takes precedence.
-- **Supports `str` and `pathlib.Path`.**
-- **Returns `None` if not found or not valid.**
+* **No hardcoded logic:** you choose any number of groups (lists, enums, dicts, strings).
+* **Automatic date and time search** (many formats supported and validated).
+* **Unlimited custom patterns:** add your own regex groups.
+* **Configurable priority:** filename or path takes precedence.
+* **Supports `str` and `pathlib.Path`.**
+* **Returns `None` if not found or not valid.**
+
+---
+
+# Table of Contents
+
+* [Installation](#installation)
+* [Supported Date and Time Formats](#supported-date-and-time-formats)
+* [Usage Examples](#usage-examples)
+
+  * [Lists and Tuples as Groups](#1-lists-and-tuples-as-groups)
+  * [Enum as Groups](#2-enum-as-groups)
+  * [Dictionary as Group](#3-dictionary-as-group)
+  * [Mixed Groups: Enum, List, Custom Patterns, Date, and Time](#4-mixed-groups-enum-list-custom-patterns-date-and-time)
+  * [Only Custom Patterns and Date/Time](#5-only-custom-patterns-and-datetime)
+  * [Priority Parameter Example](#6-if-both-the-path-and-filename-contain-a-group-or-date-the-value-from-the-priority-parameter-wins)
+* [API Reference](#api-reference)
+* [How It Works](#how-it-works)
+* [Notes](#notes)
+* [Command-Line Interface (CLI)](#command-line-interface-cli-for-filepathparser)
+
+  * [Quick Start](#-quick-start)
+  * [CLI Options](#cli-options)
+  * [CLI Example](#example)
+* [Contributing](#contributing)
+* [Project Board](#Project-Board)
+* [FAQ / Known Issues](#faq--known-issues)
+* [Author](#Author)
+* [License](#license)
 
 ---
 
@@ -19,23 +47,25 @@ pip install file_path_parser
 
 ---
 
-
 ## Supported Date and Time Formats
+
 **Date examples:**
-- 20240622           (YYYYMMDD)
-- 2024-06-22         (YYYY-MM-DD)
-- 2024_06_22         (YYYY_MM_DD)
-- 22.06.2024         (DD.MM.YYYY)
-- 22-06-2024         (DD-MM-YYYY)
-- 220624             (YYMMDD)
-- 2024-6-2, 2024_6_2
+
+* 20240622           (YYYYMMDD)
+* 2024-06-22         (YYYY-MM-DD)
+* 2024\_06\_22         (YYYY\_MM\_DD)
+* 22.06.2024         (DD.MM.YYYY)
+* 22-06-2024         (DD-MM-YYYY)
+* 220624             (YYMMDD)
+* 2024-6-2, 2024\_6\_2
 
 **Time examples:**
-- 154212             (HHMMSS)
-- 1542               (HHMM)
-- 15-42-12           (HH-MM-SS)
-- 15_42_12           (HH_MM_SS)
-- 15-42, 15_42       (HH-MM, HH_MM)
+
+* 154212             (HHMMSS)
+* 1542               (HHMM)
+* 15-42-12           (HH-MM-SS)
+* 15\_42\_12           (HH\_MM\_SS)
+* 15-42, 15\_42       (HH-MM, HH\_MM)
 
 All dates and times are validated. E.g. "20241341" is not a date; "246199" is not a time.
 
@@ -44,6 +74,7 @@ All dates and times are validated. E.g. "20241341" is not a date; "246199" is no
 ## Usage Examples
 
 ### 1. Lists and Tuples as Groups
+
 ```python
 from file_path_parser import FilePathParser
 
@@ -71,7 +102,9 @@ print(result)
 #   "cam": "cam08"
 # }
 ```
+
 ### 2. Enum as Groups
+
 ```python
 from file_path_parser import FilePathParser
 from enum import Enum
@@ -104,6 +137,7 @@ print(result)
 ```
 
 ### 3. Dictionary as Group
+
 ```python
 from file_path_parser import FilePathParser
 
@@ -131,6 +165,7 @@ print(result)
 ```
 
 ### 4. Mixed Groups: Enum, List, Custom Patterns, Date, and Time
+
 ```python
 from file_path_parser import FilePathParser
 from enum import Enum
@@ -159,6 +194,7 @@ print(result)
 ```
 
 ### 5. Only Custom Patterns and Date/Time
+
 ```python
 from file_path_parser import FilePathParser
 
@@ -179,6 +215,7 @@ print(result)
 ```
 
 ### 6. If both the path and filename contain a group or date, the value from the priority parameter wins.
+
 ```python
 from file_path_parser import FilePathParser
 
@@ -193,6 +230,7 @@ print(result)
 ---
 
 ## API Reference
+
 ```python
 class FilePathParser:
     def __init__(
@@ -209,7 +247,9 @@ class FilePathParser:
         Returns a dict {group: value or None, ...}.
         """
 ```
+
 * **Group name** is auto-generated:
+
   * Enum: lowercase enum class name.
   * Dict: key as group name.
   * List/tuple/set: groupN (N = order of argument).
@@ -220,22 +260,26 @@ class FilePathParser:
 ---
 
 ## How It Works
+
 1. Splits filename and path into “blocks” (by `_`, `-`, `.`, `/`, etc).
 
 2. For each group, tries to find an exact match (for enums, lists, dicts).
 
-3. For `date` and `time`:  
-   - Matches all supported formats via regex.
-   - Validates with `datetime.strptime`.
+3. For `date` and `time`:
 
-4. For custom patterns:  
-   - Uses provided regex patterns.
+   * Matches all supported formats via regex.
+   * Validates with `datetime.strptime`.
+
+4. For custom patterns:
+
+   * Uses provided regex patterns.
 
 If both path and filename have a group, the value from `priority` wins.
 
 ---
 
 ## Notes
+
 * Group name in the result will be None if not found or not valid.
 * If both path and filename have the group, value from priority wins.
 * You can use any number of groups or patterns — no hard limit.
@@ -282,40 +326,66 @@ poetry run file-path-parser --help
 ```bash
 poetry run file-path-parser "dog_day_cam2_20240701_0800.jpg" --groups cat dog --classes night day --date --time --pattern cam "cam\d{1,3}"
 ```
+
 The parsing result will be displayed in the terminal.
 
 ---
 
 ## Contributing
+
 Pull requests, bug reports and feature requests are welcome!
+
+---
+
+## Project Board
+
+All ongoing development, task tracking, and planning for this library is managed in the [Project Board](https://github.com/users/omigutin/projects/1).
+
+- **See what's in progress, planned, or completed**
+- **Follow the roadmap and feature development**
+- **Suggest improvements or report issues via Issues, which are linked directly to the board**
+
+> [Visit the Project Board →](https://github.com/users/omigutin/projects/1)
 
 ---
 
 ## FAQ / Known Issues
 
 ### Q: What happens if both the path and filename contain the same group, but with different values?
+
 **A:** The result depends on the `priority` parameter:
-- If `priority="filename"` (default), the group value from the filename wins.
-- If `priority="path"`, the value from the directory path wins.
+
+* If `priority="filename"` (default), the group value from the filename wins.
+* If `priority="path"`, the value from the directory path wins.
 
 ### Q: Can I use non-Latin or Unicode characters in group values?
+
 **A:** Yes. Groups and blocks are matched in a case-insensitive way and support Unicode.
 
 ### Q: What separators does the parser recognize between blocks?
-**A:** By default, the parser splits by any of these: `_`, `-`, `.`, `/`, `\`, `{}`, or space.  
+
+**A:** By default, the parser splits by any of these: `_`, `-`, `.`, `/`, `\`, `{}`, or space.
 If your files use custom separators, let us know!
 
 ### Q: What if a value looks like a date/time, but is not real?
+
 **A:** The parser validates all dates/times. "20241341" (wrong month/day) will not be recognized as a date, etc.
 
 ### Known Issues
-- If your separator is unusual (not in the list above), you may need to pre-process filenames.
-- Extremely exotic date/time formats (not listed in "Supported formats") are not matched.
-- Path parsing supports both `str` and `pathlib.Path`, but network/multiplatform paths (e.g., UNC, SMB) are not specifically tested.
+
+* If your separator is unusual (not in the list above), you may need to pre-process filenames.
+* Extremely exotic date/time formats (not listed in "Supported formats") are not matched.
+* Path parsing supports both `str` and `pathlib.Path`, but network/multiplatform paths (e.g., UNC, SMB) are not specifically tested.
+
+---
+
+## Author
+
+[![Telegram](https://img.shields.io/badge/-Telegram-26A5E4?style=flat&logo=telegram&logoColor=white)](https://t.me/omigutin)
+[![GitHub](https://img.shields.io/badge/-GitHub-181717?style=flat&logo=github&logoColor=white)](https://github.com/omigutin)
 
 ---
 
 ## License
-MIT
 
----
+MIT
