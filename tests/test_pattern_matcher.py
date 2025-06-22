@@ -28,14 +28,14 @@ def test_is_valid_time_all_formats():
 
 def test_find_by_patterns_returns_first_match():
     matcher = PatternMatcher()
-    assert matcher.find_by_patterns("foo20240622bar", [r"\d{8}"]) == "20240622"
-    assert matcher.find_by_patterns("foo", [r"\d+"]) is None
+    assert matcher._find_by_patterns("foo20240622bar", [r"\d{8}"]) == "20240622"
+    assert matcher._find_by_patterns("foo", [r"\d+"]) is None
 
 
 def test_find_special_date_time_custom():
     matcher = PatternMatcher(user_patterns={"cam": r"cam\d{1,2}"})
     assert matcher.find_special("abc20240622", "date") == "20240622"
     assert matcher.find_special("foo1542bar", "time") == "1542"
-    assert matcher.find_special("cam12_x", "cam") == "cam12"
+    assert matcher.find_special("cam12_x", "cam") == "12"
     assert matcher.find_special("zzz", "cam") is None
     assert matcher.find_special("abc", "unknown") is None

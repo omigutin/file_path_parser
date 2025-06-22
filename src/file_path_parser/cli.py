@@ -1,4 +1,5 @@
 import argparse
+
 from .file_path_parser import FilePathParser
 
 

@@ -22,14 +22,14 @@ class FilePathParser:
                 patterns={"cam": r"cam\d{1,3}"}
             )
             out = parser.parse("cat_night_cam15_20240619_1236.jpg")
-            # out == {"group1": "cat", "group2": "night", "date": "20240619", "time": "1236", "cam": "cam15"}
+            # out == {"group1": "cat", "group2": "night", "date": "20240619", "time": "1236", "cam": "15"}
     """
     _groups: Dict[str, Dict[str, str]]
     _date: bool
     _time: bool
     _separator: str
     _priority: str
-    matcher: PatternMatcher
+    _matcher: PatternMatcher
 
     def __init__(
         self,
@@ -54,7 +54,7 @@ class FilePathParser:
         self._time = time
         self._separator = separator
         self._priority = priority
-        self.matcher = PatternMatcher(patterns)
+        self._matcher = PatternMatcher(patterns)
 
     def parse(self, full_path: Union[str, Path]) -> Dict[str, Optional[str]]:
         """
@@ -178,9 +178,9 @@ class FilePathParser:
                 Optional[str]: Найденная валидная дата в виде строки, либо None если не найдено.
         """
         for b in blocks:
-            for pat in self.matcher.DATE_PATTERNS:
+            for pat in self._matcher.DATE_PATTERNS:
                 m = re.fullmatch(pat, b)
-                if m and self.matcher.is_valid_date(m.group(0)):
+                if m and self._matcher.is_valid_date(m.group(0)):
                     return m.group(0)
         return None
 
@@ -196,9 +196,9 @@ class FilePathParser:
         for b in blocks:
             if b == exclude:
                 continue
-            for pat in self.matcher.TIME_PATTERNS:
+            for pat in self._matcher.TIME_PATTERNS:
                 m = re.fullmatch(pat, b)
-                if m and self.matcher.is_valid_time(m.group(0)):
+                if m and self._matcher.is_valid_time(m.group(0)):
                     return m.group(0)
         return None
 
@@ -213,14 +213,20 @@ class FilePathParser:
         """
         skip_keys = set(skip_keys) if skip_keys else set()
         res = {}
-        if self.matcher.user_patterns:
-            for group_name, pat in self.matcher.user_patterns.items():
+        if self._matcher.user_patterns:
+            for group_name, pat in self._matcher.user_patterns.items():
                 if group_name in skip_keys:
                     continue
+                patched_pat = pat
+                if "(" not in pat:
+                    patched_pat = self.__wrap_digit_pattern(pat)
                 for block in blocks:
-                    m = re.fullmatch(pat, block)
+                    m = re.fullmatch(patched_pat, block)
                     if m:
-                        # Если паттерн содержит группу — вернуть только её содержимое
                         res[group_name] = m.group(1) if m.lastindex else m.group(0)
                         break
         return res
+
+    def __wrap_digit_pattern(self, pat):
+        # Заменяет все варианты \d+ или \d{...} на (\d+) или (\d{...})
+        return re.sub(r'(\\d(\{\d+(,\d+)?\}|\+))', r'(\1)', pat)

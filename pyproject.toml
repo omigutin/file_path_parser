@@ -1,13 +1,23 @@
 [tool.poetry]
 name = "file_path_parser"
-version = "0.1.1"
+version = "0.1.2"
 description = "Universal, extensible Python library for extracting structured information (groups, dates, times, custom patterns) from file names and paths."
-authors = ["Oleg migutin83@yandex.ru"]
+authors = ["Oleg Migutin migutin83@yandex.ru"]
 readme = "README.md"
 license = "MIT"
+keywords = ["filename", "parser", "path", "date", "time", "regex", "extract", "pattern"]
 
 packages = [
     { include = "file_path_parser", from = "src" }
+]
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities"
 ]
 
 [tool.poetry.dependencies]

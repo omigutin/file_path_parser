@@ -1,3 +1,4 @@
+
 # ![Python](https://img.icons8.com/color/32/python.png) FilePathParser
 
 Universal, extensible Python library for extracting structured information (groups, dates, times, custom patterns) from file names and paths.
@@ -8,6 +9,7 @@ Universal, extensible Python library for extracting structured information (grou
 * **Configurable priority:** filename or path takes precedence.
 * **Supports `str` and `pathlib.Path`.**
 * **Returns `None` if not found or not valid.**
+* **Custom patterns (`cam\d+`, `count\d+`) automatically return only the number (e.g. "cam15" → "15").**
 
 ---
 
@@ -16,24 +18,24 @@ Universal, extensible Python library for extracting structured information (grou
 * [Installation](#installation)
 * [Supported Date and Time Formats](#supported-date-and-time-formats)
 * [Usage Examples](#usage-examples)
-
   * [Lists and Tuples as Groups](#1-lists-and-tuples-as-groups)
   * [Enum as Groups](#2-enum-as-groups)
   * [Dictionary as Group](#3-dictionary-as-group)
   * [Mixed Groups: Enum, List, Custom Patterns, Date, and Time](#4-mixed-groups-enum-list-custom-patterns-date-and-time)
   * [Only Custom Patterns and Date/Time](#5-only-custom-patterns-and-datetime)
   * [Priority Parameter Example](#6-if-both-the-path-and-filename-contain-a-group-or-date-the-value-from-the-priority-parameter-wins)
+  * [Custom Pattern Number Extraction](#custom-pattern-number-extraction)
 * [API Reference](#api-reference)
 * [How It Works](#how-it-works)
 * [Notes](#notes)
 * [Command-Line Interface (CLI)](#command-line-interface-cli-for-filepathparser)
-
   * [Quick Start](#-quick-start)
   * [CLI Options](#cli-options)
   * [CLI Example](#example)
 * [Contributing](#contributing)
 * [Project Board](#Project-Board)
 * [FAQ / Known Issues](#faq--known-issues)
+* [About PatternMatcher.find_special](#about-patternmatcherfind_special)
 * [Author](#Author)
 * [License](#license)
 
@@ -53,19 +55,19 @@ pip install file_path_parser
 
 * 20240622           (YYYYMMDD)
 * 2024-06-22         (YYYY-MM-DD)
-* 2024\_06\_22         (YYYY\_MM\_DD)
+* 2024_06_22         (YYYY_MM_DD)
 * 22.06.2024         (DD.MM.YYYY)
 * 22-06-2024         (DD-MM-YYYY)
 * 220624             (YYMMDD)
-* 2024-6-2, 2024\_6\_2
+* 2024-6-2, 2024_6_2
 
 **Time examples:**
 
 * 154212             (HHMMSS)
 * 1542               (HHMM)
 * 15-42-12           (HH-MM-SS)
-* 15\_42\_12           (HH\_MM\_SS)
-* 15-42, 15\_42       (HH-MM, HH\_MM)
+* 15_42_12           (HH_MM_SS)
+* 15-42, 15_42       (HH-MM, HH_MM)
 
 All dates and times are validated. E.g. "20241341" is not a date; "246199" is not a time.
 
@@ -99,7 +101,7 @@ print(result)
 #   "department": "dev",
 #   "date": "20240622",
 #   "time": "1542",
-#   "cam": "cam08"
+#   "cam": "8"
 # }
 ```
 
@@ -132,7 +134,7 @@ print(result)
 #   "shift": "day",
 #   "date": "2024-06-23",
 #   "time": "1730",
-#   "cam": "cam12"
+#   "cam": "12"
 # }
 ```
 
@@ -160,7 +162,7 @@ print(result)
 #   "level": "senior",
 #   "flag": "urgent",
 #   "date": "20240601",
-#   "ticket": "T1004"
+#   "ticket": "1004"
 # }
 ```
 
@@ -189,7 +191,7 @@ print(result)
 #   "group2": "beta",
 #   "date": "2023-12-31",
 #   "time": "2359",
-#   "session": "session27"
+#   "session": "27"
 # }
 ```
 
@@ -209,8 +211,8 @@ print(result)
 # {
 #   "date": "20240701",
 #   "time": "1430",
-#   "id": "id99",
-#   "batch": "batch012"
+#   "id": "99",
+#   "batch": "012"
 # }
 ```
 
@@ -225,6 +227,33 @@ result = parser.parse("/data/prod/archive/test_20240620.csv")
 print(result)
 # Если priority="filename", group1 == "test"
 # Если priority="path", group1 == "prod"
+```
+
+---
+
+### Custom Pattern Number Extraction
+
+When you provide a custom pattern like `"cam\d+"` or `"count\d+"`, the parser **automatically extracts only the numeric part** (e.g., `"cam15"` → `"15"`).  
+You don't need to manually add parentheses around the digits: the parser will do it for you!
+
+If you provide an explicit capture group (e.g., `"cam(\d+)"`), the parser will use your group as-is.
+
+#### Example
+
+```python
+parser = FilePathParser(patterns={"cam": r"cam\d+", "count": r"count\d+"})
+result = parser.parse("cam15_count123.txt")
+print(result)
+# {'cam': '15', 'count': '123'}
+```
+
+If you want to capture a more complex value, you can use your own group:
+
+```python
+parser = FilePathParser(patterns={"cam": r"camA(\d+)"})
+result = parser.parse("camA15_B.txt")
+print(result)
+# {'cam': '15'}
 ```
 
 ---
@@ -249,7 +278,6 @@ class FilePathParser:
 ```
 
 * **Group name** is auto-generated:
-
   * Enum: lowercase enum class name.
   * Dict: key as group name.
   * List/tuple/set: groupN (N = order of argument).
@@ -262,17 +290,13 @@ class FilePathParser:
 ## How It Works
 
 1. Splits filename and path into “blocks” (by `_`, `-`, `.`, `/`, etc).
-
 2. For each group, tries to find an exact match (for enums, lists, dicts).
-
 3. For `date` and `time`:
-
    * Matches all supported formats via regex.
    * Validates with `datetime.strptime`.
-
 4. For custom patterns:
-
-   * Uses provided regex patterns.
+   * If your regex is like `"cam\d+"`, `"count\d{2,4}"`, the parser returns only the digits.  
+   * If you want the full match, provide an explicit capture group, e.g. `"label(\d+)"`.
 
 If both path and filename have a group, the value from `priority` wins.
 
@@ -351,6 +375,11 @@ All ongoing development, task tracking, and planning for this library is managed
 
 ## FAQ / Known Issues
 
+### Q: My pattern is `"cam\d+"` — why does the result return only the number?
+
+**A:** For user convenience, the parser automatically extracts only the digits from patterns like `"cam\d+"` or `"count\d+"`.  
+If you want the full match, use a custom capture group: `"cam(\d+)"`.
+
 ### Q: What happens if both the path and filename contain the same group, but with different values?
 
 **A:** The result depends on the `priority` parameter:
@@ -376,6 +405,14 @@ If your files use custom separators, let us know!
 * If your separator is unusual (not in the list above), you may need to pre-process filenames.
 * Extremely exotic date/time formats (not listed in "Supported formats") are not matched.
 * Path parsing supports both `str` and `pathlib.Path`, but network/multiplatform paths (e.g., UNC, SMB) are not specifically tested.
+
+---
+
+## About PatternMatcher.find_special
+
+**Note:**  
+The method `PatternMatcher.find_special()` is currently not used in the main library code.  
+It exists as a universal interface for dynamic field extraction by key (date, time, or any custom pattern) and may be useful for advanced integrations, future extensions, or dynamic user queries.
 
 ---
 

@@ -53,20 +53,28 @@ class PatternMatcher:
                 continue
         return False
 
-    def find_by_patterns(self, s: str, patterns: Iterable[str]) -> Optional[str]:
-        """ Возвращает первое совпадение по любому паттерну. """
-        for pat in patterns:
-            found = re.search(pat, s)
-            if found:
-                return found.group(0)
-        return None
-
     def find_special(self, s: str, key: str) -> Optional[str]:
         """ Ищет специальные группы: date, time, либо кастомные шаблоны. """
         if key.lower() == "date":
-            return self.find_by_patterns(s, self.DATE_PATTERNS)
+            return self._find_by_patterns(s, self.DATE_PATTERNS)
         if key.lower() == "time":
-            return self.find_by_patterns(s, self.TIME_PATTERNS)
+            return self._find_by_patterns(s, self.TIME_PATTERNS)
         if key in self.user_patterns:
-            return self.find_by_patterns(s, [self.user_patterns[key]])
+            return self._find_by_patterns(s, [self.user_patterns[key]])
         return None
+
+    def _find_by_patterns(self, s: str, patterns: Iterable[str]) -> Optional[str]:
+        """ Возвращает первую группу, если она есть, иначе весь матч """
+        for pat in patterns:
+            # Авто-оборачивание для case cam\d+ → cam(\d+)
+            patched_pat = pat
+            if "(" not in pat:
+                patched_pat = self.__wrap_digit_pattern(pat)
+            found = re.search(patched_pat, s)
+            if found:
+                return found.group(1) if found.lastindex else found.group(0)
+        return None
+
+    def __wrap_digit_pattern(self, pat):
+        # Заменяет все варианты \d+ или \d{...} на (\d+) или (\d{...})
+        return re.sub(r'(\\d(\{\d+(,\d+)?\}|\+))', r'(\1)', pat)
