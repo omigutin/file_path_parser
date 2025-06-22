@@ -22,6 +22,7 @@ Universal, extensible Python library for extracting structured information (grou
 * [How It Works](#how-it-works)
 * [Notes](#notes)
 * [Command-Line Interface (CLI)](#command-line-interface-cli-for-filepathparser)
+* [PatternMatcher.find_special (advanced usage)](#patternmatcherfind_special-advanced-usage)
 * [Contributing](#contributing)
 * [Project Board](#project-board)
 * [FAQ / Known Issues](#faq--known-issues)
@@ -222,6 +223,26 @@ poetry run file-path-parser "dog_day_cam2_20240701_0800.jpg" --groups cat dog --
 ```
 
 The parsing result will be displayed in the terminal.
+
+---
+
+## PatternMatcher.find_special (advanced usage)
+
+> **Note**  
+> This method is **not used by default in the main API**.  
+> It is intended for advanced users or integration testing, and may be useful if you need to extract a pattern (date, time, or your custom pattern) from a string directly.
+
+You can use `PatternMatcher.find_special` to extract either a date, time, or any custom group from a filename or arbitrary string.  
+For custom patterns, it will return **only the numeric part** (e.g., `"15"` for `"cam15"`).
+
+```python
+from file_path_parser.file_path_parser import PatternMatcher
+
+matcher = PatternMatcher(user_patterns={"cam": r"cam\d{2}"})
+print(matcher.find_special("foo_cam15_20240619.txt", "cam"))  # Output: "15"
+print(matcher.find_special("foo_20240619.txt", "date"))       # Output: "20240619"
+print(matcher.find_special("foo_1531bar.txt", "time"))        # Output: "1531"
+```
 
 ---
 
