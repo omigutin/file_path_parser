@@ -1,6 +1,6 @@
 # run.py — ручной запуск и примеры FilePathParser
 
-from src.file_path_parser import FilePathParser
+from src.file_path_parser.file_path_parser import FilePathParser
 
 
 def main():

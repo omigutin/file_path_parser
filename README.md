@@ -1,5 +1,6 @@
-
 # ![Python](https://img.icons8.com/color/32/python.png) FilePathParser
+
+> 🇷🇺   [Read in Russian](README.ru.md)
 
 Universal, extensible Python library for extracting structured information (groups, dates, times, custom patterns) from file names and paths.
 
@@ -9,7 +10,7 @@ Universal, extensible Python library for extracting structured information (grou
 * **Configurable priority:** filename or path takes precedence.
 * **Supports `str` and `pathlib.Path`.**
 * **Returns `None` if not found or not valid.**
-* **Simple interface:** Use just two functions — `parse()` and `create_parser()`.
+* **Simple interface:** Use just two functions — `parse()` and `create()`.
 
 ---
 
@@ -24,6 +25,7 @@ Universal, extensible Python library for extracting structured information (grou
 * [Command-Line Interface (CLI)](#command-line-interface-cli-for-filepathparser)
 * [PatternMatcher.find_special (advanced usage)](#patternmatcherfind_special-advanced-usage)
 * [Contributing](#contributing)
+* [Development & Testing](#development--testing)
 * [Project Board](#project-board)
 * [FAQ / Known Issues](#faq--known-issues)
 * [Author](#author)
@@ -82,9 +84,9 @@ print(result)
 ### 2. Create a reusable parser
 
 ```python
-from file_path_parser.api import create_parser
+from file_path_parser.api import create
 
-parser = create_parser(
+parser = create(
     ["cat", "dog"], ["night", "day"],
     date=True, time=True, patterns={"cam": r"cam\d{1,3}"}
 )
@@ -131,14 +133,14 @@ print(result)
 ## API Reference
 
 ```python
-from file_path_parser.api import parse, create_parser
+from file_path_parser.api import parse, create
 
 def parse(full_path: str, *groups, date=False, time=False, separator="_", priority="filename", patterns=None) -> dict:
     '''
     One-line parsing.
     '''
 
-def create_parser(*groups, date=False, time=False, separator="_", priority="filename", patterns=None) -> FilePathParser:
+def create(*groups, date=False, time=False, separator="_", priority="filename", patterns=None) -> FilePathParser:
     '''
     Returns a reusable parser object.
     '''
@@ -252,6 +254,21 @@ Pull requests, bug reports and feature requests are welcome!
 
 ---
 
+## Development & Testing
+
+* Install dev dependencies:
+
+  ```bash
+  poetry install --with dev
+  ```
+* Run tests:
+
+  ```bash
+  pytest
+  ```
+
+---
+
 ## Project Board
 
 All ongoing development, task tracking, and planning for this library is managed in the [Project Board](https://github.com/users/omigutin/projects/1).
@@ -305,8 +322,13 @@ If your files use custom separators, let us know!
 [![Telegram](https://img.shields.io/badge/-Telegram-26A5E4?style=flat&logo=telegram&logoColor=white)](https://t.me/omigutin)
 [![GitHub](https://img.shields.io/badge/-GitHub-181717?style=flat&logo=github&logoColor=white)](https://github.com/omigutin)
 
+**Project:** [github.com/omigutin/file\_path\_parser](https://github.com/omigutin/file_path_parser)
+**Project Tracker:** [file\_path\_parser Project Board](https://github.com/users/omigutin/projects/1)
+Contact: [migutin83@yandex.ru](mailto:migutin83@yandex.ru)
+
 ---
 
 ## License
 
-MIT
+MIT License.
+See [LICENSE](LICENSE) for details.

@@ -1,4 +1,4 @@
-from file_path_parser import parse, create_parser
+from file_path_parser import parse, create
 
 
 def test_parse_facade_basic():
@@ -8,7 +8,7 @@ def test_parse_facade_basic():
 
 
 def test_create_parser_facade_basic():
-    parser = create_parser(["cat", "dog"], date=True)
+    parser = create(["cat", "dog"], date=True)
     result = parser.parse("dog_night_20240619.txt")
     assert result["group1"] == "dog"
     assert result.get("date") == "20240619" or result.get("date") is None

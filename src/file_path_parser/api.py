@@ -1,4 +1,4 @@
-__all__ = ['parse', 'create_parser']
+__all__ = ['parse', 'create']
 
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
@@ -7,14 +7,13 @@ from .file_path_parser import FilePathParser
 
 
 def parse(
-    full_path: Union[str, Path],
-    *groups: Any,
-    date: bool = False,
-    time: bool = False,
-    separator: str = "_",
-    priority: str = "filename",
-    patterns: Optional[Dict[str, str]] = None,
-) -> Dict[str, Optional[str]]:
+        full_path: Union[str, Path],
+        *groups: Any,
+        date: bool = False,
+        time: bool = False,
+        separator: str = "_",
+        priority: str = "filename",
+        patterns: Optional[Dict[str, str]] = None) -> Dict[str, Optional[str]]:
     """
         Facade function for quick, one-line parsing of file paths/names.
         Initializes FilePathParser with given groups and options, parses the path, and returns the result.
@@ -36,30 +35,28 @@ def parse(
         Returns:
             Dict with found groups, date, time, custom keys (value is None if not found).
     """
-    parser = FilePathParser(
+    return FilePathParser(
         *groups,
         date=date,
         time=time,
         separator=separator,
         priority=priority,
-        patterns=patterns,
-    )
-    return parser.parse(full_path)
+        patterns=patterns
+    ).parse(full_path)
 
 
-def create_parser(
-    *groups: Any,
-    date: bool = False,
-    time: bool = False,
-    separator: str = "_",
-    priority: str = "filename",
-    patterns: Optional[Dict[str, str]] = None,
-) -> Any:
+def create(
+        *groups: Any,
+        date: bool = False,
+        time: bool = False,
+        separator: str = "_",
+        priority: str = "filename",
+        patterns: Optional[Dict[str, str]] = None) -> Any:
     """
         Factory function for getting a ready-to-use parser object.
         Returns a FilePathParser instance with the specified configuration.
         Example:
-            parser = create_parser(["cat", "dog"], date=True)
+            parser = create(["cat", "dog"], date=True)
             result = parser.parse("cat_night_20240619.txt")
         Args:
             *groups: Any number of group specs (list/tuple, enum, dict, str).
