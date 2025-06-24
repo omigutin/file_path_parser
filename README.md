@@ -249,8 +249,15 @@ print(matcher.find_special("foo_1531bar.txt", "time"))        # Output: "1531"
 ---
 
 ## Contributing
-
-Pull requests, bug reports and feature requests are welcome!
+* Pull requests, bug reports, and suggestions are welcome!
+* All improvements, new features, and fixes should be submitted via Pull Request to the develop branch.
+* The main branch is for stable releases only.
+* All changes are subject to code review before merging.
+* All code should be type-checked (mypy), formatted (black), and covered by tests (pytest).
+* Open an Issue even if you are not ready to implement a feature yourself — any ideas and feedback are valuable.
+* Want to become a contributor?
+  Fork the repo, create a branch from develop, submit a Pull Request, or contact me directly (see Author).
+  Any help and ideas are welcome!
 
 ---
 
