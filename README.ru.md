@@ -35,7 +35,7 @@
 ## Установка
 
 ```bash
-pip install file_path_parser
+pip install file-path-parser
 ```
 
 ---

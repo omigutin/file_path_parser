@@ -36,7 +36,7 @@ Universal, extensible Python library for extracting structured information (grou
 ## Installation
 
 ```bash
-pip install file_path_parser
+pip install file-path-parser
 ```
 
 ---
