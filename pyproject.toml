@@ -31,7 +31,7 @@ file-path-parser = "file_path_parser.cli:main"
 
 [tool.poetry.urls]
 Homepage = "https://github.com/omigutin/file_path_parser"
-Issues = "https://github.com/omigutin/file_path_parser/issues"
+Issues = "https://github.com/users/omigutin/projects/1"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
